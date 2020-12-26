@@ -21,7 +21,7 @@ TEST_SIZE = 200  # fixed
 
 " fixed value "
 VAL_TOTAL = 100
-# check change
+
 def Test_phase(model, args, k):
     model.eval()
 
@@ -90,7 +90,7 @@ def train(args):
 
     # model setting
     model = FewShotModel()
-    # model.apply(init_weights)
+    model.apply(init_weights)
     print(model)
     """ TODO 1.a END """
 
@@ -109,8 +109,8 @@ def train(args):
     " Set an optimizer or scheduler for Few-shot classification (optional) "
 
     # Default optimizer setting
-    # optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     # Scheduler
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer,

@@ -4,6 +4,67 @@ import torch
 from efficientnet_pytorch import EfficientNet
 from src.utils import *
 
+def add_features(feature_list):
+    features = []
+
+    for feat in feature_list:
+        if feat[-1] == 'conv':
+            features += [conv_block(feat[0], feat[1])]
+        
+        elif feat[-1] == 'convnew':
+            features += [conv_block(feat[0], feat[1], feat[2], feat[3], feat[4], mode=feat[-1])]
+        
+        elif feat[-1] == 'convnew_nobatch':
+            features += [conv_block(feat[0], feat[1], feat[2], feat[3], feat[4], mode=feat[-1])]
+        
+        elif feat[-1] == 'inception':
+            features += [inception_module(feat[0], feat[1], feat[2], feat[3], feat[4], feat[5], feat[6])]
+
+        elif feat[-1] == 'inception_nobatch':
+            features += [inception_nbatch_module(feat[0], feat[1], feat[2], feat[3], feat[4], feat[5], feat[6])]
+        
+        elif feat[-1] == 'residual_block':
+            print("IN RESIDUAL")
+            print(feat[:-1])
+            sub_features = add_features(feat[:-1])
+            residual_block = nn.Sequential(*sub_features)
+            features += [residual_block_module(residual_block)]
+        
+        elif feat == 'MaxP2_2':
+            features += [nn.MaxPool2d(kernel_size=2, stride=2)]
+        
+        elif feat == 'MaxP3_2':
+            features += [nn.MaxPool2d(kernel_size=3, stride=2)]
+        
+        elif feat == 'MaxP3_2_1':
+            features += [nn.MaxPool2d(kernel_size=3, stride=2, padding=1)]
+        
+        elif feat == 'MaxP4_4':
+            features += [nn.MaxPool2d(kernel_size=4, stride=4)]
+        
+        elif feat == 'AvgP_7': 
+            features += [nn.AvgPool2d(kernel_size=7, stride=7)]
+
+        elif feat == 'AvgP_6': 
+            features += [nn.AvgPool2d(kernel_size=6, stride=6)]
+        
+        elif feat == 'AvgP_4': 
+            features += [nn.AvgPool2d(kernel_size=4, stride=4)]
+
+        else:
+            print("Not implemented")
+            exit()
+    
+    return features
+class residual_block_module(nn.Module):
+    def __init__(self, module):
+        super().__init__()
+        self.module = module
+
+    def forward(self, x):
+        out = self.module(x) + x
+        return out
+
 class inception_nbatch_module(nn.Module):
     def __init__(self, in_channels, conv_dim_3_3_mid, conv_dim_5_5_mid, conv_dim_1_1_out, conv_dim_3_3_out, conv_dim_5_5_out, max_dim_out):
         super(inception_nbatch_module,self).__init__()
@@ -28,7 +89,6 @@ class inception_nbatch_module(nn.Module):
         module_out = torch.cat([conv_1_1_out, conv_1_3_out, conv_1_5_out, conv_max_out], 1)
 
         return module_out 
-
 class inception_module(nn.Module):
     def __init__(self, in_channels, conv_dim_3_3_mid, conv_dim_5_5_mid, conv_dim_1_1_out, conv_dim_3_3_out, conv_dim_5_5_out, max_dim_out):
         super(inception_module,self).__init__()
@@ -142,7 +202,15 @@ GoogleRefNbatch = [[3, 64, 7, 2, 3, 'convnew_nobatch'], 'MaxP3_2_1', [64, 192, 3
                 [512, 144, 32, 112, 288, 64, 64, 'inception_nobatch'], [528, 160, 32, 256, 320, 128, 128, 'inception_nobatch'], 'MaxP3_2_1', [832, 160, 32, 256, 320, 128, 128, 'inception_nobatch'], \
                 [832, 192, 48, 384, 384, 128, 128, 'inception_nobatch'], 'AvgP_7']
 
-cur_model = AlexRef
+# Residual Googlenet
+ResGoogleRef = [[3, 64, 7, 2, 3, 'convnew'], 'MaxP3_2_1', [64, 192, 3, 1, 1, 'convnew'], 'MaxP3_2_1', \
+                [[192, 96, 16, 64, 64, 32, 32, 'inception'], [192, 96, 16, 64, 64, 32, 32, 'inception'], 'residual_block'], [192, 256, 1, 1, 0, 'convnew'], 'MaxP3_2_1', \
+                [[256, 48, 8, 96, 104, 24, 32, 'inception'], [256, 56, 12, 80, 112, 32, 32, 'inception'], [256, 64, 12, 64, 128, 32, 32, 'inception'], 'residual_block'], [256, 512, 1, 1, 0, 'convnew'], \
+                [[512, 112, 24, 160, 224, 64, 64, 'inception'], [512, 128, 24, 128, 256, 64, 64, 'inception'], 'residual_block'], [512, 832, 1, 1, 0, 'convnew'], 'MaxP3_2_1', \
+                [832, 160, 32, 256, 320, 128, 128, 'inception'], [832, 192, 48, 384, 384, 128, 128, 'inception'], 'AvgP_7' \
+                ]
+
+cur_model = ResGoogleRef
 
 class FewShotModel(nn.Module):
     def __init__(self, c=3, h=400, w=400, num_class=5):
@@ -150,49 +218,9 @@ class FewShotModel(nn.Module):
 
         self.feature_list = cur_model
         print("Current Model Structure is", cur_model)
-        features = []
 
-        for feat in self.feature_list:
-            if feat[-1] == 'conv':
-                features += [conv_block(feat[0], feat[1])]
-            
-            elif feat[-1] == 'convnew':
-                features += [conv_block(feat[0], feat[1], feat[2], feat[3], feat[4], mode=feat[-1])]
-            
-            elif feat[-1] == 'convnew_nobatch':
-                features += [conv_block(feat[0], feat[1], feat[2], feat[3], feat[4], mode=feat[-1])]
-            
-            elif feat[-1] == 'inception':
-                features += [inception_module(feat[0], feat[1], feat[2], feat[3], feat[4], feat[5], feat[6])]
-
-            elif feat[-1] == 'inception_nobatch':
-                features += [inception_nbatch_module(feat[0], feat[1], feat[2], feat[3], feat[4], feat[5], feat[6])]
-            
-            elif feat == 'MaxP2_2':
-                features += [nn.MaxPool2d(kernel_size=2, stride=2)]
-            
-            elif feat == 'MaxP3_2':
-                features += [nn.MaxPool2d(kernel_size=3, stride=2)]
-            
-            elif feat == 'MaxP3_2_1':
-                features += [nn.MaxPool2d(kernel_size=3, stride=2, padding=1)]
-            
-            elif feat == 'MaxP4_4':
-                features += [nn.MaxPool2d(kernel_size=4, stride=4)]
-            
-            elif feat == 'AvgP_7': 
-                features += [nn.AvgPool2d(kernel_size=7, stride=7)]
-
-            elif feat == 'AvgP_6': 
-                features += [nn.AvgPool2d(kernel_size=6, stride=6)]
-            
-            elif feat == 'AvgP_4': 
-                features += [nn.AvgPool2d(kernel_size=4, stride=4)]
-
-            else:
-                print("Not implemented")
-                exit()
-
+        features = add_features(self.feature_list)
+        
         self.features = nn.Sequential(*features)
 
     def forward(self, x):
@@ -208,8 +236,8 @@ def init_weights(m):
         m.bias.data.fill_(0.01)
 
 if __name__ == '__main__':
-    temp_shot = torch.randint(0, 200, (25, 3, 64, 64)).float()
-    temp_query = torch.randint(0, 200, (20, 3, 64, 64)).float()
+    temp_shot = torch.randint(0, 200, (25, 3, 224, 224)).float()
+    temp_query = torch.randint(0, 200, (20, 3, 224, 224)).float()
     temp_label = torch.tensor([0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4])
 
     model = FewShotModel()
