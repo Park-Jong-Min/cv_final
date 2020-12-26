@@ -21,7 +21,7 @@ TEST_SIZE = 200  # fixed
 
 " fixed value "
 VAL_TOTAL = 100
-
+# check change
 def Test_phase(model, args, k):
     model.eval()
 
