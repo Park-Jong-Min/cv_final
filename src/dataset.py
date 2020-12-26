@@ -4,7 +4,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 import matplotlib.pyplot as plt
-
+import random
 
 class CUB(Dataset):
     def __init__(self, root, state=None, data_len=None):
@@ -67,13 +67,36 @@ class CUB(Dataset):
         if len(img.shape) == 2:
             img = np.stack([img] * 3, 2)
 
-        img = Image.fromarray(img, mode='RGB')
-        img = transforms.Resize((512, 512), Image.BILINEAR)(img)
-        img = transforms.CenterCrop((400, 400))(img)
-        img = transforms.RandomHorizontalFlip()(img)
-        img = transforms.ToTensor()(img)
-        img = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(img)
+        coin = random.randint(0, 4)
+
+        crop_size = 224
+        image_size = int(crop_size * 1.15)
+
+        if self.state == 'train':
+            img = Image.fromarray(img, mode='RGB')
+            img = transforms.Resize((image_size, image_size), Image.BILINEAR)(img)
+            img = transforms.CenterCrop((crop_size, crop_size))(img)
+            img = transforms.RandomHorizontalFlip()(img)
+            img = transforms.ToTensor()(img)
+            img = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(img)
+
+        # if self.state == 'train':
+        #     # Five Crop Aug
+        #     img = Image.fromarray(img, mode='RGB')
+        #     img = transforms.Resize((image_size, image_size), Image.BILINEAR)(img)
+        #     img = transforms.FiveCrop((crop_size, crop_size))(img)            
+        #     img = transforms.RandomHorizontalFlip()(img[coin])
+        #     img = transforms.RandomHorizontalFlip()(img)
+        #     img = transforms.ToTensor()(img)
+        #     img = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(img)
         
+        elif self.state == 'val':
+            img = Image.fromarray(img, mode='RGB')
+            img = transforms.Resize((image_size, image_size), Image.BILINEAR)(img)
+            img = transforms.CenterCrop((crop_size, crop_size))(img)
+            img = transforms.ToTensor()(img)
+            img = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(img)
+
         """ TODO 1.c (optional) END """
         
         return img, target

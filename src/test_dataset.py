@@ -46,14 +46,16 @@ class CUB(Dataset):
         """
         img = self._imgs[index]
 
+        crop_size = 128
+        image_size = int(crop_size * 1.15)
+
         # convert grayscale images into RGB images
         if len(img.shape) == 2:
             img = np.stack([img] * 3, 2)
 
         img = Image.fromarray(img, mode='RGB')
-        img = transforms.Resize((512, 512), Image.BILINEAR)(img)
-        img = transforms.CenterCrop((400, 400))(img)
-        img = transforms.RandomHorizontalFlip()(img)
+        img = transforms.Resize((image_size, image_size), Image.BILINEAR)(img)
+        img = transforms.CenterCrop((crop_size, crop_size))(img)
         img = transforms.ToTensor()(img)
         img = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(img)
 

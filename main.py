@@ -6,16 +6,17 @@ from torch.utils.data import DataLoader
 from src.dataset import CUB as Dataset
 from src.sampler import Sampler
 from src.train_sampler import Train_Sampler
-from src.utils import count_acc, Averager, csv_write, square_euclidean_metric
-from model import FewShotModel
+from src.utils import *
+from model import FewShotModel, init_weights
 
 from src.test_dataset import CUB as Test_Dataset
 from src.test_sampler import Test_Sampler
+
 " User input value "
 TOTAL = 10000  # total step of training
-PRINT_FREQ = 50  # frequency of print loss and accuracy at training step
-VAL_FREQ = 100  # frequency of model eval on validation dataset
-SAVE_FREQ = 100  # frequency of saving model
+PRINT_FREQ = 10  # frequency of print loss and accuracy at training step
+VAL_FREQ = 250  # frequency of model eval on validation dataset
+SAVE_FREQ = 250  # frequency of saving model
 TEST_SIZE = 200  # fixed
 
 " fixed value "
@@ -52,6 +53,15 @@ def Test_phase(model, args, k):
                 
             pred is torch.tensor with size [20] and the each component value is zero to four
             """
+            model_in = torch.cat((data_shot, data_query), 0)
+            model_out = model(model_in)
+
+            shot_out = model_out[:data_shot.size(0)]
+            query_out = model_out[data_shot.size(0):]
+
+            mean_shot_out = mean_vector_cal(shot_out, 5, 5)
+            logits = square_euclidean_metric(query_out.view(20, -1), mean_shot_out)
+            pred = torch.argmin(logits, dim=1)
 
             # save your prediction as StudentID_Name.csv file
             csv.add(pred)
@@ -68,19 +78,20 @@ def train(args):
     # Train data loading
     dataset = Dataset(args.dpath, state='train')
     train_sampler = Train_Sampler(dataset._labels, n_way=args.nway, k_shot=args.kshot, query=args.query)
-    data_loader = DataLoader(dataset=dataset, batch_sampler=train_sampler, num_workers=4, pin_memory=True)
+    data_loader = DataLoader(dataset=dataset, batch_sampler=train_sampler, num_workers=8, pin_memory=True)
 
     # Validation data loading
     val_dataset = Dataset(args.dpath, state='val')
     val_sampler = Sampler(val_dataset._labels, n_way=args.nway, k_shot=args.kshot, query=args.query)
-    val_data_loader = DataLoader(dataset=val_dataset, batch_sampler=val_sampler, num_workers=4, pin_memory=True)
+    val_data_loader = DataLoader(dataset=val_dataset, batch_sampler=val_sampler, num_workers=8, pin_memory=True)
 
     """ TODO 1.a """
     " Make your own model for Few-shot Classification in 'model.py' file."
 
     # model setting
     model = FewShotModel()
-
+    # model.apply(init_weights)
+    print(model)
     """ TODO 1.a END """
 
     # pretrained model load
@@ -98,8 +109,15 @@ def train(args):
     " Set an optimizer or scheduler for Few-shot classification (optional) "
 
     # Default optimizer setting
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
+    # Scheduler
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer,
+                                                            mode='min',
+                                                            factor=0.1,
+                                                            patience=0,
+                                                            verbose=True)
     """ TODO 1.b (optional) END """
 
     tl = Averager()  # save average loss
@@ -141,7 +159,19 @@ def train(args):
                 logits : A value to measure accuracy and loss
             """
 
-            # YOUR CODE
+            ### YOUR CODE
+
+            model_in = torch.cat((data_shot, data_query), 0)
+            model_out = model(model_in)
+
+            shot_out = model_out[:data_shot.size(0)]
+            query_out = model_out[data_shot.size(0):]
+
+            mean_shot_out = mean_vector_cal(shot_out, 5, 5)
+            logits = square_euclidean_metric(query_out.view(20, -1), mean_shot_out)
+
+            loss = class_vector_distance_softmax_loss(logits)
+            ###
 
             """ TODO 2 END """
 
@@ -201,6 +231,17 @@ def train(args):
                         """
 
                         # YOUR CODE
+                        model_in = torch.cat((data_shot, data_query), 0)
+                        model_out = model(model_in)
+
+                        shot_out = model_out[:data_shot.size(0)]
+                        query_out = model_out[data_shot.size(0):]
+
+                        mean_shot_out = mean_vector_cal(shot_out, 5, 5)
+                        logits = square_euclidean_metric(query_out.view(20, -1), mean_shot_out)
+
+                        loss = class_vector_distance_softmax_loss(logits)
+                        ###
 
                         """ TODO 2 END """
 
@@ -210,6 +251,8 @@ def train(args):
                         va.add(acc)
 
                         proto = None; logits = None; loss = None
+
+                scheduler.step(vl.item())
 
                 print('val accuracy mean : %.4f' % va.item())
                 print('val loss mean : %.4f' % vl.item())
@@ -239,7 +282,7 @@ if __name__ == '__main__':
                         help='number of data in each class in the support set (1 or 5)')
     parser.add_argument('--query', '--q', default=20, type=int, help='number of query data')
     parser.add_argument('--ntest', default=100, type=int, help='number of tests')
-    parser.add_argument('--gpus', type=int, nargs='+', default=1)
+    parser.add_argument('--gpus', type=int, nargs='+', default=0)
     parser.add_argument('--test_mode', type=int, default=0, help="if you want to test the model, change the value to 1")
 
     args = parser.parse_args()

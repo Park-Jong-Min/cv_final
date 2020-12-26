@@ -1,5 +1,34 @@
 import torch
+import torch.nn.functional as F
 import csv
+
+
+def mean_vector_cal(feature_out, nway, kshot):
+    """
+    Args:
+        feature_out : torch.tensor, features of data shot, [args.nway*args.kshot, embedding_dim]
+
+    Returns:
+        mean value of feature_out's same class, [args.nway, embedding_dim]
+    """
+    
+    return torch.mean(feature_out.view(nway, kshot, -1), dim=1)
+
+def class_vector_distance_softmax_loss(logits, nway=5, kshot=5, nquery=20):
+
+    # loss = torch.zeros(1).cuda()
+
+    logsoftmax_logtis = -F.log_softmax(-logits, dim=1).view(5, 4, 5)
+
+    # for way in range(nway):
+    #     loss += torch.sum(logsoftmax_logtis[way,:,way]) / 20
+    #     print(torch.sum(logsoftmax_logtis[way,:,way]) / 20)
+
+    loss = (torch.sum(logsoftmax_logtis[0,:,0]) + torch.sum(logsoftmax_logtis[1,:,1]) + \
+            torch.sum(logsoftmax_logtis[2,:,2]) + torch.sum(logsoftmax_logtis[3,:,3]) + \
+            torch.sum(logsoftmax_logtis[4,:,4])) / 20
+
+    return loss
 
 def square_euclidean_metric(a, b):
     """ Measure the euclidean distance (optional)
@@ -19,7 +48,6 @@ def square_euclidean_metric(a, b):
     b = b.unsqueeze(0).expand(n, m, -1)
 
     logits = torch.pow(a - b, 2).sum(2)
-
     return logits
 
 
