@@ -80,24 +80,24 @@ class CUB(Dataset):
         #     img = transforms.ToTensor()(img)
         #     img = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(img)
 
-        if self.state == 'train':
-            # Five Crop Aug
-            img = Image.fromarray(img, mode='RGB')
-            img = transforms.Resize((image_size, image_size), Image.BILINEAR)(img)
-            img = transforms.FiveCrop((crop_size, crop_size))(img)            
-            img = transforms.RandomHorizontalFlip()(img[coin])
-            img = transforms.ToTensor()(img)
-            img = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(img)
-
         # if self.state == 'train':
-        #     # Five Crop Aug & Rotate
+        #     # Five Crop Aug
         #     img = Image.fromarray(img, mode='RGB')
         #     img = transforms.Resize((image_size, image_size), Image.BILINEAR)(img)
         #     img = transforms.FiveCrop((crop_size, crop_size))(img)            
         #     img = transforms.RandomHorizontalFlip()(img[coin])
-        #     img = transforms.RandomRotation(20)(img)
         #     img = transforms.ToTensor()(img)
         #     img = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(img)
+
+        if self.state == 'train':
+            # Five Crop Aug & Rotate
+            img = Image.fromarray(img, mode='RGB')
+            img = transforms.Resize((image_size, image_size), Image.BILINEAR)(img)
+            img = transforms.FiveCrop((crop_size, crop_size))(img)            
+            img = transforms.RandomHorizontalFlip()(img[coin])
+            img = transforms.RandomRotation(20)(img)
+            img = transforms.ToTensor()(img)
+            img = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(img)
         
         elif self.state == 'val':
             img = Image.fromarray(img, mode='RGB')

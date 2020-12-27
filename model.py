@@ -208,7 +208,7 @@ ResGoogleRef = [[3, 64, 7, 2, 3, 'convnew'], 'MaxP3_2_1', [64, 192, 3, 1, 1, 'co
                 [832, 160, 32, 256, 320, 128, 128, 'inception'], [832, 192, 48, 384, 384, 128, 128, 'inception'], 'AvgP_7' \
                 ]
 
-cur_model = ResGoogleRef
+cur_model = GoogleRef
 
 class FewShotModel(nn.Module):
     def __init__(self, c=3, h=400, w=400, num_class=5):
