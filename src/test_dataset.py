@@ -46,7 +46,7 @@ class CUB(Dataset):
         """
         img = self._imgs[index]
 
-        crop_size = 128
+        crop_size = 224
         image_size = int(crop_size * 1.15)
 
         # convert grayscale images into RGB images

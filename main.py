@@ -109,7 +109,9 @@ def train(args):
     " Set an optimizer or scheduler for Few-shot classification (optional) "
 
     # Default optimizer setting
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
+    # optimizer = torch.optim.SGD(model.parameters(), lr=0.0001, weight_decay=1e-5)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-5)
     # optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     # Scheduler

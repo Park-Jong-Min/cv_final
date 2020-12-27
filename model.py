@@ -24,8 +24,6 @@ def add_features(feature_list):
             features += [inception_nbatch_module(feat[0], feat[1], feat[2], feat[3], feat[4], feat[5], feat[6])]
         
         elif feat[-1] == 'residual_block':
-            print("IN RESIDUAL")
-            print(feat[:-1])
             sub_features = add_features(feat[:-1])
             residual_block = nn.Sequential(*sub_features)
             features += [residual_block_module(residual_block)]
