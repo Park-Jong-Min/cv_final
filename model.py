@@ -256,6 +256,5 @@ if __name__ == '__main__':
     mean_shot_out = mean_vector_cal(shot_out, 5, 5)
     logits = square_euclidean_metric(query_out.view(20, -1), mean_shot_out)
 
+    avg_distance = torch.mean(square_euclidean_metric(mean_shot_out, mean_shot_out)) / 2
     loss = class_vector_distance_softmax_loss(logits)
-
-    print(loss)

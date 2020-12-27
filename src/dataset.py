@@ -73,6 +73,7 @@ class CUB(Dataset):
         image_size = int(crop_size * 1.15)
 
         # if self.state == 'train':
+        #     # Normal Train
         #     img = Image.fromarray(img, mode='RGB')
         #     img = transforms.Resize((image_size, image_size), Image.BILINEAR)(img)
         #     img = transforms.CenterCrop((crop_size, crop_size))(img)
